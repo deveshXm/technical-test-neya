@@ -1,0 +1,37 @@
+---
+alwaysApply: true
+---
+
+# Implementation Progress
+
+## ✅ Task 1: Add conversation history (multi-turn) — COMPLETED
+
+### Changes Made
+
+**1. `components/Chat.tsx`**
+- Sends full `messages` array (role + content) to `/api/chat` instead of single message
+- In-memory state only (resets on page refresh)
+
+**2. `app/api/chat/route.ts`**
+- Accepts `{ messages: Array<{role, content}> }` instead of `{ message: string }`
+- Validates each message has proper `role` ("user" | "assistant") and `content`
+
+**3. `lib/llm.ts`**
+- Changed from single `user` prompt to `messages[]` array
+- Uses Vercel AI SDK's `CoreMessage` type for multi-turn conversations
+- Exports `ChatMessage` type
+
+**4. `lib/agent.ts`**
+- Updated signature: `runAgent({ messages })` instead of `runAgent({ message })`
+- Passes full conversation history to LLM
+
+### How It Works
+- Frontend maintains message history in React state
+- Each API call includes the full conversation (all user + assistant messages)
+- LLM receives complete context to understand follow-up messages
+
+## ⏳ Task 2: Clarification — NOT STARTED
+
+## ⏳ Task 3: Group search + suggestion — NOT STARTED
+
+## ⏳ Bonus: Lightweight evaluation — NOT STARTED

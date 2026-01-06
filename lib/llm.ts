@@ -1,12 +1,17 @@
-import { generateText } from "ai";
+import { generateText, CoreMessage } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 
 type LlmProvider = "gemini" | "openai";
 
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export type LlmTextRequest = {
   system: string;
-  user: string;
+  messages: ChatMessage[];
   model?: string;
 };
 
@@ -38,10 +43,16 @@ export async function generateResponse(req: LlmTextRequest): Promise<LlmTextResp
       ? createGoogleGenerativeAI({ apiKey })
       : createOpenAI({ apiKey });
 
+  // Convert to CoreMessage format for Vercel AI SDK
+  const coreMessages: CoreMessage[] = req.messages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
   const result = await generateText({
     model: modelFactory(modelName),
     system: req.system,
-    prompt: req.user,
+    messages: coreMessages,
   });
 
   return { text: result.text, model: modelName, provider };

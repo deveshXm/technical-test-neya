@@ -19,7 +19,7 @@ export function Chat() {
       id: newId(),
       role: "assistant",
       content:
-        "Hey 👋 I’m Neya. Tell me what groups you're interested in, and I'll try and find a match for you.",
+        "Hey 👋 I'm Neya. Tell me what groups you're interested in, and I'll try and find a match for you.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -41,10 +41,13 @@ export function Chat() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
+      // Send full conversation history to the API
+      const historyForApi = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
+      
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ messages: historyForApi }),
       });
 
       const data: { reply?: string; error?: string } = await res.json().catch(() => ({}));
