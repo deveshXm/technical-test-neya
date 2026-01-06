@@ -1,42 +1,61 @@
-# Neya technical test (setup)
+```mermaid
+flowchart TD
+    A[User Message] --> B{LLM Decision}
+    
+    B -->|Vague request| C[Ask ONE clarifying question]
+    B -->|Clear enough| D[Call searchGroups tool]
+    B -->|Off-topic| E[Redirect to group finding]
+    
+    C --> A
+    
+    D --> F[Start with ALL groups<br/>~55 groups]
+    
+    F --> G{Keywords<br/>provided?}
+    G -->|Yes| H[Filter: name/description/tags<br/>contain any keyword]
+    G -->|No| I[Keep all]
+    
+    H --> J{Category<br/>provided?}
+    I --> J
+    
+    J -->|Yes & not 'any'| K[Filter by category keywords]
+    J -->|No or 'any'| L[Keep current results]
+    
+    K --> M{Time preference<br/>provided?}
+    L --> M
+    
+    M -->|weekday_morning| N[Filter: cadence includes<br/>'weekday' + not 'evening']
+    M -->|weekday_evening| O[Filter: cadence includes<br/>'evening' or Tue/Wed/Thu]
+    M -->|weekend| P[Filter: cadence includes<br/>'weekend/saturday/sunday']
+    M -->|'any' or not set| Q[Keep current results]
+    
+    N --> R[Paginate Results]
+    O --> R
+    P --> R
+    Q --> R
+    
+    R --> S[Return page of 5 groups<br/>+ pagination metadata]
+    
+    S --> T{Results found?}
+    T -->|Yes| U[LLM suggests best match<br/>with reason + cadence]
+    T -->|No results| V[LLM asks for more details]
+    
+    U --> W[User Response]
+    V --> W
+    
+    W -->|Want more options| X[Call tool with page: 2, 3...]
+    W -->|New request| A
+    X --> R
 
-This repo is a small Next.js app with a chat UI and a minimal API route.
-
-For the take-home brief, see **`INSTRUCTIONS.md`**.
-
-## Note on group search
-
-This starter intentionally does **not** include a `lib/tools.ts` “search stub”. If you implement group matching, create it wherever you prefer (e.g. in `lib/agent.ts` or a new module under `lib/`), using `lib/mockGroups.ts` as the source of truth.
-
-## Setup
-
-1. Install dependencies:
-
-```bash
-npm install
+    subgraph Category Keywords
+        direction LR
+        CAT1[parents: parents, mums, toddlers, babies, family]
+        CAT2[fitness: running, cycling, swimming, yoga, hiking...]
+        CAT3[social: social, coffee, pub, games, friends]
+        CAT4[creative: art, music, writing, photography...]
+        CAT5[career: career, networking, startups, coding, tech]
+        CAT6[support: support, mental-health, wellbeing...]
+        CAT7[learning: language, learning, study]
+        CAT8[community: volunteering, community, environment]
+        CAT9[pets: dogs, cats, pets]
+    end
 ```
-
-2. Create a `.env.local`:
-
-```bash
-cp .env.example .env.local
-```
-
-3. Add an LLM API key to `.env.local`:
-
-```bash
-GEMINI_API_KEY=...
-
-# or (if you prefer OpenAI):
-# OPENAI_API_KEY=...
-```
-
-If you set both keys, the app will **prefer Gemini**.
-
-4. Run the app:
-
-```bash
-npm run dev
-```
-
-Then open `http://localhost:3000`.
