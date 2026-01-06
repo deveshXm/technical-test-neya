@@ -1,6 +1,9 @@
 import { generateText, CoreMessage, stepCountIs } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import { agentTools } from "./tools";
+
+type LlmProvider = "gemini" | "openai";
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -17,33 +20,35 @@ export type LlmResponse = {
   text: string;
 };
 
-function getApiKey(): string {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error(
-      "Missing OPENAI_API_KEY. Create a `.env.local` and set OPENAI_API_KEY=...",
-    );
-  }
-  return apiKey;
+function getProviderAndKey(): { provider: LlmProvider; apiKey: string } {
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  if (geminiKey) return { provider: "gemini", apiKey: geminiKey };
+
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  if (openaiKey) return { provider: "openai", apiKey: openaiKey };
+
+  throw new Error("Missing GEMINI_API_KEY or OPENAI_API_KEY in .env.local");
 }
 
 export async function generateResponse(req: LlmRequest): Promise<LlmResponse> {
-  // Ensure API key is set
-  getApiKey();
-  
-  const modelName = req.model ?? "gpt-4o-mini";
+  const { provider, apiKey } = getProviderAndKey();
+  const modelName = req.model ?? (provider === "gemini" ? "gemini-2.5-flash" : "gpt-4o-mini");
 
   const coreMessages: CoreMessage[] = req.messages.map((m) => ({
     role: m.role,
     content: m.content,
   }));
 
+  const modelFactory = provider === "gemini" 
+    ? createGoogleGenerativeAI({ apiKey })
+    : createOpenAI({ apiKey });
+
   const result = await generateText({
-    model: openai.responses(modelName),
+    model: modelFactory(modelName),
     system: req.system,
     messages: coreMessages,
     tools: agentTools,
-    stopWhen: stepCountIs(3), // Allow up to 3 steps for tool calls
+    stopWhen: stepCountIs(3),
   });
 
   return { text: result.text };
